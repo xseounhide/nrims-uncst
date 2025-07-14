@@ -26,23 +26,27 @@ def file_hash(path):
             h.update(chunk)
     return h.hexdigest()
 
-while True:
-    try:
-        for file_pair in files_to_restore:
-            backup = file_pair["backup"]
-            restore_to = file_pair["restore_to"]
+def restore_files():
+    for file_pair in files_to_restore:
+        backup = file_pair["backup"]
+        restore_to = file_pair["restore_to"]
 
-            backup_hash = file_hash(backup)
-            target_hash = file_hash(restore_to)
+        backup_hash = file_hash(backup)
+        target_hash = file_hash(restore_to)
 
-            if backup_hash is not None and (target_hash is None or target_hash != backup_hash):
+        if backup_hash is not None and (target_hash is None or target_hash != backup_hash):
+            try:
                 shutil.copyfile(backup, restore_to)
                 bstat = os.stat(backup)
                 os.utime(restore_to, (bstat.st_atime, bstat.st_mtime))
                 print(f"[✓] File restored: {restore_to}")
+            except Exception as e:
+                print(f"[!] ERROR restoring {restore_to}: {e}")
 
-        time.sleep(5)
-
-    except Exception as e:
-        print(f"[!] ERROR: {e}")
+if __name__ == "__main__":
+    while True:
+        try:
+            restore_files()
+        except Exception as e:
+            print(f"[!] ERROR: {e}")
         time.sleep(5)
